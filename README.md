@@ -2,8 +2,7 @@
 
 ## Overview
 
-Metadata Privacy Scanner is a Python Flask web app that helps users identify hidden metadata in uploaded images, PDFs, and DOCX documents. It is designed as a clean cybersecurity/privacy portfolio project that demonstrates secure upload handling, metadata extraction, risk scoring, reporting, and Docker deployment.
-
+Metadata Privacy Scanner is a Python Flask web app that helps users identify hidden metadata in uploaded images, PDFs, and DOCX documents.
 ## Features
 
 - Upload and scan one file or a batch of JPG, JPEG, PNG, PDF, and DOCX files.
