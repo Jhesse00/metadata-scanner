@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Metadata Privacy Scanner</title>
+    <script>
+        document.documentElement.dataset.theme = localStorage.getItem("theme") || "dark";
+    </script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="site-shell">
+<nav class="navbar navbar-expand-lg navbar-dark app-nav">
+    <div class="container nav-content">
+        <a class="navbar-brand fw-bold" href="{{ url_for('index') }}">Metadata Privacy Scanner</a>
+        <span class="navbar-text d-none d-md-inline">Privacy and security awareness tool</span>
+        <button class="btn theme-toggle" id="themeToggle" type="button" aria-label="Switch to light mode" title="Switch to light mode">☀️</button>
+    </div>
+</nav>
+
+<main class="container py-5 flex-grow-1">
+    <section class="hero-card p-4 p-lg-5 mb-4">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-7">
+                <h1 class="display-5 fw-bold mb-3">Scan files for hidden privacy risks.</h1>
+                <p class="lead muted-text">
+                    This tool scans files for hidden metadata and can provide a sanitized version with privacy-risk metadata removed.
+                </p>
+                <p class="muted-text mb-0">
+                    Use it for privacy and security awareness before sharing images, PDFs, or documents publicly.
+                </p>
+                <div class="d-flex flex-wrap gap-2 mt-4">
+                    <span class="pill">JPG</span>
+                    <span class="pill">JPEG</span>
+                    <span class="pill">PNG</span>
+                    <span class="pill">PDF</span>
+                    <span class="pill">DOCX</span>
+                    <span class="pill">10MB max</span>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <div class="upload-panel p-4 shadow-lg">
+                    <h2 class="h4 mb-2">Upload a file</h2>
+                    <p class="small muted-text">Files are processed locally and can be automatically deleted after scanning.</p>
+                    <p class="small sanitizer-note">After scanning, you can download a cleaned version of supported files.</p>
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }}" role="alert">{{ message }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    <form method="post" enctype="multipart/form-data">
+                        <label for="files" class="form-label">Choose one or more supported files</label>
+                        <input class="form-control form-control-lg" id="files" name="files" type="file" accept=".jpg,.jpeg,.png,.pdf,.docx" multiple required>
+                        <div class="form-check mt-3">
+                            <input class="form-check-input" type="checkbox" id="auto_delete" name="auto_delete" checked>
+                            <label class="form-check-label" for="auto_delete">Delete uploaded source files after scanning</label>
+                        </div>
+                        <button class="btn btn-info btn-lg w-100 mt-4 fw-semibold" type="submit">Scan Metadata</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="row g-4">
+        <div class="col-md-4">
+            <div class="info-card h-100">
+                <h3 class="h5">What it finds</h3>
+                <p>Detects author names, GPS data, camera details, software names, timestamps, hashes, and file details.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="info-card h-100">
+                <h3 class="h5">Why it matters</h3>
+                <p>Metadata can expose private details such as location, device information, editing history, or creator identity.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="info-card h-100">
+                <h3 class="h5">What you get</h3>
+                <p>A risk score, clear findings, exportable reports, and a sanitized file download when supported.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="cleaning-card card-panel p-4 mt-4">
+        <h2 class="h5 mb-3">Cleaning support</h2>
+        <div class="row g-3">
+            <div class="col-md-4"><strong>Images</strong><p class="muted-text mb-0">Remove EXIF metadata.</p></div>
+            <div class="col-md-4"><strong>PDFs</strong><p class="muted-text mb-0">Remove common document metadata where possible.</p></div>
+            <div class="col-md-4"><strong>DOCX</strong><p class="muted-text mb-0">Remove author and core property metadata where possible.</p></div>
+        </div>
+    </section>
+</main>
+<footer class="site-footer">
+    <div class="container">© 2026 Johanne Hesse. All rights reserved.</div>
+</footer>
+<script>
+    const themeToggle = document.getElementById("themeToggle");
+    const setThemeIcon = () => {
+        const isDark = document.documentElement.dataset.theme === "dark";
+        themeToggle.textContent = isDark ? "☀️" : "🌙";
+        themeToggle.title = isDark ? "Switch to light mode" : "Switch to dark mode";
+        themeToggle.setAttribute("aria-label", themeToggle.title);
+    };
+    setThemeIcon();
+    themeToggle.addEventListener("click", () => {
+        const nextTheme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+        document.documentElement.dataset.theme = nextTheme;
+        localStorage.setItem("theme", nextTheme);
+        setThemeIcon();
+    });
+</script>
+</body>
+</html>

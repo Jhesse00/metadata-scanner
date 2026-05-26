@@ -1,0 +1,11 @@
+services:
+  metadata-privacy-scanner:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./reports:/app/reports
+      - ./cleaned:/app/cleaned
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-metadata-scanner-local-dev-secret}
