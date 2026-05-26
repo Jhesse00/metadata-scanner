@@ -42,12 +42,6 @@ Metadata Privacy Scanner is a Python Flask web app that helps users identify hid
 - pytest
 - GitHub Actions
 
-## Screenshots
-
-The repository includes screenshots for GitHub presentation:
-
-- `screenshots/homepage.png`
-- `screenshots/results-page.png`
 
 ## How It Works
 
@@ -180,12 +174,6 @@ Recommendations:
 - Device metadata can reveal the camera, phone, or software used.
 ```
 
-## Resume Bullets
-
-- Built a Python Flask web app that scans uploaded images, PDFs, and documents for hidden metadata and privacy risks.
-- Implemented metadata extraction and risk scoring to flag GPS data, author names, timestamps, device details, and software information.
-- Added metadata sanitization, before/after comparison, batch scanning, source file auto-delete, and TXT, JSON, and HTML reporting.
-- Added pytest tests, GitHub Actions CI, Docker support, and a clean Bootstrap interface to make the tool easy to test and deploy.
 
 ## Future Improvements
 
