@@ -22,7 +22,7 @@ Metadata Privacy Scanner is a Python Flask web app that helps users identify hid
 - Supports automatic deletion of uploaded source files after scanning.
 - Generates downloadable `.txt` reports in the `reports` folder.
 - Generates downloadable `.json` reports for structured scan output.
-- Generates downloadable `.html` reports for portfolio-friendly reporting.
+- Generates downloadable `.html` reports for browser-friendly reporting.
 - Provides improved user-friendly errors for empty uploads, unsupported files, oversized files, and corrupt files.
 - Uses a polished Bootstrap interface with cards, badges, responsive layout, and risk-specific styling.
 - Includes pytest coverage and a GitHub Actions workflow that runs tests on push and pull requests.
