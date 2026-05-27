@@ -304,6 +304,12 @@ def extract_with_exiftool(file_path):
 
 def extract_image_metadata(file_path):
     metadata = []
+    try:
+        with Image.open(file_path) as image:
+            image.verify()
+    except (UnidentifiedImageError, Image.DecompressionBombError, OSError) as exc:
+        raise ScanError("This image appears to be corrupt or unreadable. Please upload a valid JPG, JPEG, or PNG file.") from exc
+
     exiftool_data = extract_with_exiftool(file_path)
 
     if exiftool_data:
