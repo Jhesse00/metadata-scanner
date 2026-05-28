@@ -1,0 +1,43 @@
+<article class="app-card metadata-card">
+    <div class="app-card-header">
+        <div>
+            <h3 class="app-card-title">{{ group.category }}</h3>
+            {% if group.category == "Identity Metadata" %}
+                <p class="app-card-description">Names and creator fields that can identify who made or edited the file.</p>
+            {% elif group.category == "Location Metadata" %}
+                <p class="app-card-description">GPS details that may reveal where an image was captured.</p>
+            {% elif group.category == "Device Metadata" %}
+                <p class="app-card-description">Camera, phone, software, or tool details embedded in the file.</p>
+            {% elif group.category == "Time Metadata" %}
+                <p class="app-card-description">Readable creation and modification dates found in the metadata.</p>
+            {% elif group.category == "File Information" %}
+                <p class="app-card-description">Basic technical details used to identify and verify the file.</p>
+            {% else %}
+                <p class="app-card-description">Additional metadata that does not fit the main privacy categories.</p>
+            {% endif %}
+        </div>
+        <span class="badge badge-soft">{{ group.metadata_items|length }} fields</span>
+    </div>
+    <div class="table-scroll">
+        <table class="metadata-table">
+            <thead>
+            <tr>
+                <th scope="col">Field</th>
+                <th scope="col">Value</th>
+                <th scope="col">Risk</th>
+                <th scope="col">Category</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for item in group.metadata_items %}
+                <tr class="row-risk-{{ item.risk|lower }}">
+                    <td class="metadata-field">{{ item.field }}</td>
+                    <td class="metadata-value">{{ item.value }}</td>
+                    <td class="metadata-risk"><span class="badge badge-risk risk-{{ item.risk|lower }}">{{ item.risk }}</span></td>
+                    <td><span class="badge badge-soft">{{ item.category }}</span></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</article>

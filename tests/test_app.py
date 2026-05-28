@@ -1,5 +1,6 @@
 import io
 import json
+import re
 from datetime import datetime
 from pathlib import Path
 
@@ -22,6 +23,13 @@ from app import (
 def write_png(path):
     image = Image.new("RGB", (1, 1), color="white")
     image.save(path, format="PNG")
+
+
+def png_bytes():
+    buffer = io.BytesIO()
+    Image.new("RGB", (1, 1), color="white").save(buffer, format="PNG")
+    buffer.seek(0)
+    return buffer
 
 
 def test_allowed_file_validation():
@@ -145,3 +153,104 @@ def test_upload_route_handles_corrupt_supported_file():
             follow_redirects=True,
         )
         assert b"corrupt or unreadable" in response.data
+
+
+def test_upload_route_renders_valid_png_results(tmp_path, monkeypatch):
+    import app
+
+    upload_dir = tmp_path / "uploads"
+    report_dir = tmp_path / "reports"
+    cleaned_dir = tmp_path / "cleaned"
+    upload_dir.mkdir()
+    report_dir.mkdir()
+    cleaned_dir.mkdir()
+    monkeypatch.setattr(app, "UPLOAD_FOLDER", upload_dir)
+    monkeypatch.setattr(app, "REPORT_FOLDER", report_dir)
+    monkeypatch.setattr(app, "CLEANED_FOLDER", cleaned_dir)
+
+    app.app.config["TESTING"] = True
+    with app.app.test_client() as test_client:
+        response = test_client.post(
+            "/",
+            data={"files": (png_bytes(), "sample.png"), "auto_delete": "on"},
+            content_type="multipart/form-data",
+        )
+
+    assert response.status_code == 200
+    assert b"Scan Complete" in response.data
+    assert b"Download TXT" in response.data
+    assert b"Download Sanitized File" in response.data
+    assert not any(upload_dir.iterdir())
+    assert len(list(report_dir.iterdir())) == 3
+    assert len(list(cleaned_dir.iterdir())) == 1
+
+
+def test_batch_scan_links_to_individual_file_details(tmp_path, monkeypatch):
+    import app
+
+    upload_dir = tmp_path / "uploads"
+    report_dir = tmp_path / "reports"
+    cleaned_dir = tmp_path / "cleaned"
+    upload_dir.mkdir()
+    report_dir.mkdir()
+    cleaned_dir.mkdir()
+    monkeypatch.setattr(app, "UPLOAD_FOLDER", upload_dir)
+    monkeypatch.setattr(app, "REPORT_FOLDER", report_dir)
+    monkeypatch.setattr(app, "CLEANED_FOLDER", cleaned_dir)
+    app.BATCH_SCANS.clear()
+
+    app.app.config["TESTING"] = True
+    with app.app.test_client() as test_client:
+        batch_response = test_client.post(
+            "/",
+            data={
+                "files": [
+                    (png_bytes(), "first.png"),
+                    (png_bytes(), "second.png"),
+                ],
+                "auto_delete": "on",
+            },
+            content_type="multipart/form-data",
+            follow_redirects=True,
+        )
+
+        assert batch_response.status_code == 200
+        assert b"Batch result files" in batch_response.data
+        assert b"View Details" in batch_response.data
+        assert b"Download Sanitized" in batch_response.data
+
+        detail_urls = re.findall(rb'href="(/results/[^"]+/[^"]+)"', batch_response.data)
+        assert detail_urls
+
+        detail_response = test_client.get(detail_urls[0].decode())
+        assert detail_response.status_code == 200
+        assert b"File Details" in detail_response.data
+        assert b"Back to Batch Results" in detail_response.data
+        assert b"Category" in detail_response.data
+        assert b"Download Sanitized File" in detail_response.data
+
+        scoped_txt_url = re.search(rb'href="(/results/[^"]+/[^"]+/reports/txt)"', detail_response.data)
+        assert scoped_txt_url
+        download_response = test_client.get(scoped_txt_url.group(1).decode())
+        assert download_response.status_code == 200
+
+        scoped_cleaned_url = re.search(rb'href="(/results/[^"]+/[^"]+/cleaned)"', detail_response.data)
+        assert scoped_cleaned_url
+        cleaned_response = test_client.get(scoped_cleaned_url.group(1).decode())
+        assert cleaned_response.status_code == 200
+
+    assert not any(upload_dir.iterdir())
+    assert len(list(report_dir.iterdir())) == 6
+    assert len(list(cleaned_dir.iterdir())) == 2
+
+
+def test_missing_batch_scan_shows_clean_message():
+    import app
+
+    app.BATCH_SCANS.clear()
+    app.app.config["TESTING"] = True
+    with app.app.test_client() as test_client:
+        response = test_client.get("/results/missing-scan", follow_redirects=True)
+
+    assert response.status_code == 200
+    assert b"This batch scan is no longer available" in response.data

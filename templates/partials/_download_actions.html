@@ -1,0 +1,27 @@
+{% set is_batch_detail = scan_id is defined and file_id is defined %}
+<section class="app-card action-card fade-in delay-4">
+    <div>
+        <p class="section-eyebrow">Downloads</p>
+        <h2 class="app-card-title">Export or scan again</h2>
+        <p class="app-card-description">Download this file's reports or continue reviewing scan results.</p>
+    </div>
+    <div class="action-buttons">
+        {% if is_batch_detail %}
+            <a class="btn btn-primary" href="{{ url_for('download_scoped_report', scan_id=scan_id, file_id=file_id, report_type='txt') }}">Download TXT</a>
+            <a class="btn btn-outline" href="{{ url_for('download_scoped_report', scan_id=scan_id, file_id=file_id, report_type='json') }}">Download JSON</a>
+            <a class="btn btn-outline" href="{{ url_for('download_scoped_report', scan_id=scan_id, file_id=file_id, report_type='html') }}">Download HTML</a>
+            {% if cleaned_name %}
+                <a class="btn btn-outline" href="{{ url_for('download_scoped_cleaned', scan_id=scan_id, file_id=file_id) }}">Download Sanitized File</a>
+            {% endif %}
+            <a class="btn btn-ghost" href="{{ back_url }}">Back to Batch Results</a>
+        {% else %}
+            <a class="btn btn-primary" href="{{ url_for('download_report', report_name=report_name) }}">Download TXT</a>
+            <a class="btn btn-outline" href="{{ url_for('download_report', report_name=json_report_name) }}">Download JSON</a>
+            <a class="btn btn-outline" href="{{ url_for('download_report', report_name=html_report_name) }}">Download HTML</a>
+            {% if cleaned_name %}
+                <a class="btn btn-outline" href="{{ url_for('download_cleaned', cleaned_name=cleaned_name) }}">Download Sanitized File</a>
+            {% endif %}
+            <a class="btn btn-ghost" href="{{ url_for('index') }}">Scan Another File</a>
+        {% endif %}
+    </div>
+</section>

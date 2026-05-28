@@ -3,6 +3,7 @@ import html
 import json
 import os
 import re
+import secrets
 import shutil
 import subprocess
 import zipfile
@@ -23,6 +24,7 @@ REPORT_FOLDER = BASE_DIR / "reports"
 CLEANED_FOLDER = BASE_DIR / "cleaned"
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "pdf", "docx"}
 MAX_CONTENT_LENGTH = 10 * 1024 * 1024
+BATCH_SCAN_TTL_SECONDS = 60 * 60
 Image.MAX_IMAGE_PIXELS = 25_000_000
 
 HIGH_RISK_FIELDS = {
@@ -67,6 +69,8 @@ risk_priority = {
     "Medium": 2,
     "Low": 1,
 }
+
+BATCH_SCANS = {}
 
 
 class ScanError(Exception):
@@ -498,6 +502,92 @@ def compare_metadata(original_metadata, cleaned_metadata):
     return sorted(comparison, key=lambda item: risk_priority.get(item["risk"], 0), reverse=True)
 
 
+def sensitive_metadata_groups(metadata):
+    groups = {
+        "Location Metadata": [],
+        "Identity Metadata": [],
+        "Device Metadata": [],
+        "Time Metadata": [],
+        "Other Metadata": [],
+    }
+    for item in metadata:
+        if item["risk"] not in {"High", "Medium"}:
+            continue
+        category = item["category"] if item["category"] in groups else "Other Metadata"
+        groups[category].append(item)
+    return {category: items for category, items in groups.items() if items}
+
+
+def metadata_found_count(metadata):
+    return sum(1 for item in metadata if item["field"] not in {"File Name", "File Type", "File Size", "SHA-256 Hash"})
+
+
+def make_scan_id():
+    return secrets.token_urlsafe(18)
+
+
+def make_file_id():
+    return secrets.token_urlsafe(12)
+
+
+def cleanup_batch_scans():
+    now = datetime.now(timezone.utc)
+    expired_scan_ids = [
+        scan_id
+        for scan_id, scan in BATCH_SCANS.items()
+        if (now - scan["created_at"]).total_seconds() > BATCH_SCAN_TTL_SECONDS
+    ]
+    for scan_id in expired_scan_ids:
+        BATCH_SCANS.pop(scan_id, None)
+
+
+def batch_summary(results):
+    return {
+        "total": len(results),
+        "low": sum(1 for result in results if result["risk"]["level"] == "Low"),
+        "medium": sum(1 for result in results if result["risk"]["level"] == "Medium"),
+        "high": sum(1 for result in results if result["risk"]["level"] == "High"),
+        "with_metadata": sum(1 for result in results if result["metadata_count"] > 0),
+        "sanitized": sum(1 for result in results if result.get("cleaned_name")),
+    }
+
+
+def create_batch_scan(results):
+    cleanup_batch_scans()
+    scan_id = make_scan_id()
+    for result in results:
+        result["file_id"] = make_file_id()
+        result["scan_id"] = scan_id
+    BATCH_SCANS[scan_id] = {
+        "scan_id": scan_id,
+        "created_at": datetime.now(timezone.utc),
+        "results": results,
+        "result_map": {result["file_id"]: result for result in results},
+        "summary": batch_summary(results),
+    }
+    return BATCH_SCANS[scan_id]
+
+
+def get_batch_scan_or_redirect(scan_id):
+    cleanup_batch_scans()
+    scan = BATCH_SCANS.get(scan_id)
+    if not scan:
+        flash("This batch scan is no longer available. Please run a new scan.", "warning")
+        return None
+    return scan
+
+
+def file_result_or_redirect(scan_id, file_id):
+    scan = get_batch_scan_or_redirect(scan_id)
+    if not scan:
+        return None, None
+    result = scan["result_map"].get(file_id)
+    if not result:
+        flash("That file result is no longer available. Please choose a file from the batch summary.", "warning")
+        return scan, None
+    return scan, result
+
+
 def sanitize_image(file_path, output_path):
     try:
         with Image.open(file_path) as image:
@@ -631,7 +721,7 @@ def generate_html_report(filename, file_type, metadata, risk, cleaned_status="No
     content = f"""<!doctype html>
 <html lang=\"en\">
 <head><meta charset=\"utf-8\"><title>Metadata Privacy Report</title>
-<style>body{{font-family:Arial,sans-serif;line-height:1.5;color:#111827;margin:2rem}}table{{border-collapse:collapse;width:100%}}td,th{{border:1px solid #d1d5db;padding:.65rem;text-align:left}}th{{background:#f3f4f6}}</style></head>
+<style>body{{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.6;color:#111827;margin:2rem}}table{{border-collapse:collapse;width:100%}}td,th{{border:1px solid #d1d5db;padding:.75rem;text-align:left}}th{{background:#f3f4f6}}</style></head>
 <body>
 <h1>Metadata Privacy Report</h1>
 <p><strong>File Name:</strong> {html.escape(filename)}</p>
@@ -696,7 +786,9 @@ def scan_uploaded_file(uploaded_file, auto_delete=False):
         return {
             "filename": filename,
             "file_type": extension.upper(),
+            "scan_time": format_metadata_date(scan_date),
             "metadata": metadata,
+            "metadata_count": metadata_found_count(metadata),
             "grouped_metadata": group_metadata(metadata),
             "risk": risk,
             "report_name": report_name,
@@ -708,6 +800,7 @@ def scan_uploaded_file(uploaded_file, auto_delete=False):
             "file_size": metadata_value(metadata, "File Size"),
             "sha256": metadata_value(metadata, "SHA-256 Hash"),
             "sensitive_count": len(risk["sensitive_fields"]),
+            "sensitive_groups": sensitive_metadata_groups(metadata),
         }
     finally:
         if auto_delete:
@@ -746,7 +839,8 @@ def index():
             return redirect(url_for("index"))
 
         if len(results) > 1:
-            return render_template("batch_results.html", results=results, errors=errors)
+            scan = create_batch_scan(results)
+            return redirect(url_for("batch_results", scan_id=scan["scan_id"]))
 
         result = results[0]
 
@@ -756,6 +850,62 @@ def index():
         )
 
     return render_template("index.html")
+
+
+@app.route("/results/<scan_id>")
+def batch_results(scan_id):
+    scan = get_batch_scan_or_redirect(scan_id)
+    if not scan:
+        return redirect(url_for("index"))
+    return render_template(
+        "batch_results.html",
+        scan_id=scan_id,
+        results=scan["results"],
+        summary=scan["summary"],
+    )
+
+
+@app.route("/results/<scan_id>/<file_id>")
+def batch_file_results(scan_id, file_id):
+    scan, result = file_result_or_redirect(scan_id, file_id)
+    if not scan:
+        return redirect(url_for("index"))
+    if not result:
+        return redirect(url_for("batch_results", scan_id=scan_id))
+    context = {**result, "back_url": url_for("batch_results", scan_id=scan_id)}
+    return render_template("batch_file_results.html", **context)
+
+
+@app.route("/results/<scan_id>/<file_id>/reports/<report_type>")
+def download_scoped_report(scan_id, file_id, report_type):
+    scan, result = file_result_or_redirect(scan_id, file_id)
+    if not result:
+        if scan:
+            return redirect(url_for("batch_results", scan_id=scan_id))
+        return redirect(url_for("index"))
+    report_fields = {
+        "txt": "report_name",
+        "json": "json_report_name",
+        "html": "html_report_name",
+    }
+    report_field = report_fields.get(report_type)
+    if not report_field:
+        flash("Invalid report type.", "danger")
+        return redirect(url_for("batch_file_results", scan_id=scan_id, file_id=file_id))
+    return send_from_directory(REPORT_FOLDER, result[report_field], as_attachment=True)
+
+
+@app.route("/results/<scan_id>/<file_id>/cleaned")
+def download_scoped_cleaned(scan_id, file_id):
+    scan, result = file_result_or_redirect(scan_id, file_id)
+    if not result:
+        if scan:
+            return redirect(url_for("batch_results", scan_id=scan_id))
+        return redirect(url_for("index"))
+    if not result.get("cleaned_name"):
+        flash("No sanitized file is available for this result.", "warning")
+        return redirect(url_for("batch_file_results", scan_id=scan_id, file_id=file_id))
+    return send_from_directory(CLEANED_FOLDER, result["cleaned_name"], as_attachment=True)
 
 
 @app.route("/reports/<path:report_name>")

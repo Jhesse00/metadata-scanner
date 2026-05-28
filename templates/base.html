@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Metadata Privacy Scanner{% endblock %}</title>
+    <script>
+        document.documentElement.dataset.theme = localStorage.getItem("theme") || "dark";
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="site-shell">
+<header class="site-nav">
+    <div class="app-container nav-inner">
+        <a class="brand-link" href="{{ url_for('index') }}">Metadata Privacy Scanner</a>
+        <div class="nav-actions">
+            <span class="nav-label">{% block nav_label %}Privacy Tool{% endblock %}</span>
+            <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to light mode" title="Switch to light mode">☀️</button>
+        </div>
+    </div>
+</header>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="app-container flash-stack" aria-live="polite">
+            {% for category, message in messages %}
+                <div class="flash flash-{{ category }}" role="alert">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+
+<main class="app-main app-container">
+    {% block content %}{% endblock %}
+</main>
+
+<footer class="site-footer">
+    <div class="app-container">© 2026 Johanne Hesse. All rights reserved.</div>
+</footer>
+
+<script>
+    const themeToggle = document.getElementById("themeToggle");
+    const setThemeIcon = () => {
+        const isDark = document.documentElement.dataset.theme === "dark";
+        themeToggle.textContent = isDark ? "☀️" : "🌙";
+        themeToggle.title = isDark ? "Switch to light mode" : "Switch to dark mode";
+        themeToggle.setAttribute("aria-label", themeToggle.title);
+    };
+    setThemeIcon();
+    themeToggle.addEventListener("click", () => {
+        const nextTheme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+        document.documentElement.dataset.theme = nextTheme;
+        localStorage.setItem("theme", nextTheme);
+        setThemeIcon();
+    });
+
+    document.querySelectorAll("[data-href]").forEach((card) => {
+        card.addEventListener("click", (event) => {
+            if (event.target.closest("a, button, input, label, select, textarea")) {
+                return;
+            }
+            window.location.href = card.dataset.href;
+        });
+        card.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                window.location.href = card.dataset.href;
+            }
+        });
+    });
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

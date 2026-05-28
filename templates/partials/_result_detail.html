@@ -1,0 +1,141 @@
+<div class="results-page">
+<section class="app-card result-hero fade-in">
+    <div class="result-title-block">
+        <p class="section-eyebrow">Risk Summary</p>
+        <h1>{{ filename }}</h1>
+        <p class="app-card-description">Review the hidden metadata found in this file before sharing it.</p>
+    </div>
+    <div class="risk-score-card">
+        <span class="badge badge-risk risk-{{ risk.level|lower }}">{{ risk.level }} Risk</span>
+        <strong>Score: {{ risk.score }}/100</strong>
+    </div>
+</section>
+
+<section class="results-grid fade-in delay-1">
+    <article class="app-card">
+        <div class="app-card-header compact">
+            <div>
+                <p class="section-eyebrow">File Summary</p>
+                <h2 class="app-card-title">Scanned file</h2>
+            </div>
+            <span class="badge badge-soft">{{ file_type }}</span>
+        </div>
+        <dl class="detail-list">
+            <div><dt>File name</dt><dd>{{ filename }}</dd></div>
+            <div><dt>File type</dt><dd>{{ file_type }}</dd></div>
+            <div><dt>File size</dt><dd>{{ file_size }}</dd></div>
+            <div><dt>Scan time</dt><dd>{{ scan_time }}</dd></div>
+            <div><dt>SHA-256</dt><dd class="hash-text">{{ sha256 }}</dd></div>
+        </dl>
+    </article>
+
+    <article class="app-card">
+        <div class="app-card-header compact">
+            <div>
+                <p class="section-eyebrow">Sensitive Metadata</p>
+                <h2 class="app-card-title">Flagged fields</h2>
+            </div>
+            <span class="badge badge-soft">{{ sensitive_count }} found</span>
+        </div>
+        {% if sensitive_groups %}
+            <div class="sensitive-group-list">
+                {% for category, items in sensitive_groups.items() %}
+                    <div class="sensitive-group">
+                        <h3>{{ category }}</h3>
+                        <div class="badge-row compact-row">
+                            {% for item in items %}
+                                <span class="badge badge-sensitive">{{ item.field }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="empty-state compact-empty-state">No major privacy-risk metadata was detected.</p>
+        {% endif %}
+    </article>
+</section>
+
+<section class="results-grid fade-in delay-2">
+    <article class="app-card">
+        <div class="app-card-header compact">
+            <div>
+                <p class="section-eyebrow">Explanation</p>
+                <h2 class="app-card-title">Why this risk level?</h2>
+            </div>
+        </div>
+        <p class="app-card-description">{{ risk.explanation }}</p>
+    </article>
+
+    <article class="app-card">
+        <div class="app-card-header compact">
+            <div>
+                <p class="section-eyebrow">Recommendations</p>
+                <h2 class="app-card-title">Privacy next steps</h2>
+            </div>
+        </div>
+        <div class="recommendation-list">
+            {% for recommendation in risk.recommendations %}
+                <div class="recommendation-item">{{ recommendation }}</div>
+            {% endfor %}
+        </div>
+    </article>
+</section>
+
+<section class="metadata-section fade-in delay-3">
+    <div class="section-header">
+        <p class="section-eyebrow">Metadata Table</p>
+        <h2>Review details before sharing</h2>
+        <p>Results are ordered by risk so the most sensitive metadata appears first.</p>
+    </div>
+
+    <div class="metadata-card-stack">
+        {% for group in grouped_metadata %}
+            {% include "partials/_metadata_table.html" %}
+        {% endfor %}
+    </div>
+</section>
+
+{% include "partials/_download_actions.html" %}
+
+{% if comparison %}
+    <section class="metadata-section fade-in delay-4">
+        <div class="section-header">
+            <p class="section-eyebrow">Before vs After</p>
+            <h2>Sanitizer comparison</h2>
+            <p>This table shows which metadata fields were removed, changed, or kept in the cleaned file.</p>
+        </div>
+        <article class="app-card metadata-card">
+            <div class="app-card-header">
+                <div>
+                    <h3 class="app-card-title">Cleaned file review</h3>
+                    <p class="app-card-description">Compare original metadata against the sanitized version.</p>
+                </div>
+                <span class="badge badge-soft">Sanitized Available</span>
+            </div>
+            <div class="table-scroll">
+                <table class="metadata-table">
+                    <thead>
+                    <tr>
+                        <th scope="col">Field</th>
+                        <th scope="col">Original Value</th>
+                        <th scope="col">Cleaned Value</th>
+                        <th scope="col">Status</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for item in comparison %}
+                        <tr class="row-risk-{{ item.risk|lower }}">
+                            <td class="metadata-field">{{ item.field }}</td>
+                            <td class="metadata-value">{{ item.original }}</td>
+                            <td class="metadata-value">{{ item.cleaned }}</td>
+                            <td class="metadata-risk"><span class="badge status-chip status-{{ item.status|lower|replace(' ', '-') }}">{{ item.status }}</span></td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </article>
+    </section>
+{% endif %}
+</div>
