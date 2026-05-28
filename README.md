@@ -1,5 +1,27 @@
 # Metadata Privacy Scanner Web App
 
+## Screenshots
+
+### Homepage
+
+![Metadata Privacy Scanner homepage](screenshots/homepage-dark.png)
+
+### Low-Risk Results
+
+![Low-risk metadata scan results](screenshots/low-risk-results.png)
+
+### Metadata Table and Downloads
+
+![Metadata table and download actions](screenshots/low-risk-metadata-and-downloads.png)
+
+### High-Risk Metadata Table
+
+![High-risk grouped metadata table](screenshots/high-risk-metadata-table.png)
+
+### Sanitizer Comparison
+
+![Sanitizer before and after comparison](screenshots/sanitizer-comparison.png)
+
 ## Overview
 
 Metadata Privacy Scanner is a Python Flask web app that helps users identify hidden metadata in uploaded images, PDFs, and DOCX documents.
@@ -24,7 +46,7 @@ Metadata Privacy Scanner is a Python Flask web app that helps users identify hid
 - Generates downloadable `.json` reports for structured scan output.
 - Generates downloadable `.html` reports for browser-friendly reporting.
 - Provides improved user-friendly errors for empty uploads, unsupported files, oversized files, and corrupt files.
-- Uses a polished Bootstrap interface with cards, badges, responsive layout, and risk-specific styling.
+- Uses a polished custom interface with cards, badges, responsive layout, and risk-specific styling.
 - Includes pytest coverage and a GitHub Actions workflow that runs tests on push and pull requests.
 - Includes Docker and Docker Compose support for repeatable deployment.
 
@@ -32,7 +54,7 @@ Metadata Privacy Scanner is a Python Flask web app that helps users identify hid
 
 - Python
 - Flask
-- Bootstrap 5
+- Custom CSS
 - ExifTool
 - Pillow
 - PyMuPDF
