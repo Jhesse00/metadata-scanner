@@ -16,7 +16,7 @@
     </div>
 </section>
 
-<section class="batch-summary-grid fade-in delay-1" aria-label="Batch scan summary">
+<section class="batch-summary-grid fade-in" aria-label="Batch scan summary">
     <article class="app-card stat-card">
         <span>Total files</span>
         <strong>{{ summary.total }}</strong>
@@ -43,7 +43,7 @@
     </article>
 </section>
 
-<section class="metadata-section fade-in delay-2">
+<section class="metadata-section fade-in">
     <div class="section-header">
         <p class="section-eyebrow">Files</p>
         <h2>Batch result files</h2>
@@ -57,7 +57,7 @@
                     <div>
                         <p class="section-eyebrow">{{ result.file_type }}</p>
                         <h3 class="app-card-title">{{ result.filename }}</h3>
-                        <p class="app-card-description">{{ result.file_size }} · {{ result.metadata_count }} metadata fields found</p>
+                        <p class="app-card-description">{{ result.file_size }} · {{ result.metadata_count }} metadata field{{ "s" if result.metadata_count != 1 }} found</p>
                     </div>
                     <span class="badge badge-risk risk-{{ result.risk.level|lower }}">{{ result.risk.level }} Risk</span>
                 </div>
@@ -79,7 +79,7 @@
     </div>
 </section>
 
-<section class="app-card action-card fade-in delay-3">
+<section class="app-card action-card fade-in">
     <div>
         <p class="section-eyebrow">Next Scan</p>
         <h2 class="app-card-title">Run another scan</h2>

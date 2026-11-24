@@ -34,6 +34,7 @@
     const progressMessage = document.querySelector("[data-progress-message]");
     const progressCount = document.querySelector("[data-progress-count]");
     const fileSummary = document.querySelector("[data-file-summary]");
+    const fileError = document.querySelector("[data-file-error]");
     const steps = Array.from(document.querySelectorAll("[data-step]"));
 
     let hasSubmitted = false;
@@ -135,6 +136,15 @@
         }
     };
 
+    const setFileError = (message) => {
+        if (!fileError || !fileInput) {
+            return;
+        }
+        fileError.textContent = message;
+        fileError.hidden = !message;
+        fileInput.setAttribute("aria-invalid", message ? "true" : "false");
+    };
+
     const renderHtmlResponse = (html, url) => {
         if (url) {
             window.history.replaceState({}, "", url);
@@ -161,7 +171,10 @@
     };
 
     if (fileInput) {
-        fileInput.addEventListener("change", updateFileSummary);
+        fileInput.addEventListener("change", () => {
+            updateFileSummary();
+            setFileError("");
+        });
     }
 
     form.addEventListener("submit", async (event) => {
@@ -172,7 +185,8 @@
 
         const fileCount = selectedCount();
         if (fileCount === 0) {
-            showError("Choose at least one supported file before scanning.");
+            setFileError("No file selected. Choose at least one JPG, JPEG, PNG, PDF or DOCX file, then select Scan Metadata.");
+            fileInput.focus();
             return;
         }
 
@@ -186,7 +200,7 @@
             await submitWithProgress(startedAt, fileCount);
         } catch (_error) {
             await wait(ERROR_DISPLAY_DELAY);
-            showError("Scan failed. Please try again or use a supported file type.");
+            showError("The scan request did not reach the server or was interrupted. Check your connection and select Scan Metadata again.");
         }
     });
 })();

@@ -3,15 +3,20 @@
     <div class="result-title-block">
         <p class="section-eyebrow">Risk Summary</p>
         <h1>{{ filename }}</h1>
-        <p class="app-card-description">Review the hidden metadata found in this file before sharing it.</p>
+        {% if sensitive_count %}
+            <p class="app-card-description">{{ sensitive_count }} field{{ "s" if sensitive_count != 1 }} in this file can identify a person, place, device or time. Review them below before sharing.</p>
+        {% else %}
+            <p class="app-card-description">No identifying metadata was flagged. Only basic file details were found.</p>
+        {% endif %}
     </div>
     <div class="risk-score-card">
         <span class="badge badge-risk risk-{{ risk.level|lower }}">{{ risk.level }} Risk</span>
         <strong>Score: {{ risk.score }}/100</strong>
+        <span class="app-card-description">0 means nothing flagged. Higher means more identifying fields.</span>
     </div>
 </section>
 
-<section class="results-grid fade-in delay-1">
+<section class="results-grid fade-in">
     <article class="app-card">
         <div class="app-card-header compact">
             <div>
@@ -51,12 +56,12 @@
                 {% endfor %}
             </div>
         {% else %}
-            <p class="empty-state compact-empty-state">No major privacy-risk metadata was detected.</p>
+            <p class="empty-state compact-empty-state">No names, GPS location, device or date fields were found. You can share this file as is, or download the cleaned copy below.</p>
         {% endif %}
     </article>
 </section>
 
-<section class="results-grid fade-in delay-2">
+<section class="results-grid fade-in">
     <article class="app-card">
         <div class="app-card-header compact">
             <div>
@@ -82,7 +87,7 @@
     </article>
 </section>
 
-<section class="metadata-section fade-in delay-3">
+<section class="metadata-section fade-in">
     <div class="section-header">
         <p class="section-eyebrow">Metadata Table</p>
         <h2>Review details before sharing</h2>
@@ -99,7 +104,7 @@
 {% include "partials/_download_actions.html" %}
 
 {% if comparison %}
-    <section class="metadata-section fade-in delay-4">
+    <section class="metadata-section fade-in">
         <div class="section-header">
             <p class="section-eyebrow">Before vs After</p>
             <h2>Sanitizer comparison</h2>

@@ -90,9 +90,10 @@ button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 select:focus-visible,
+summary:focus-visible,
 textarea:focus-visible {
-    box-shadow: 0 0 0 4px var(--ring);
-    outline: 0;
+    outline: 2px solid var(--text);
+    outline-offset: 2px;
 }
 
 h1,
@@ -166,16 +167,16 @@ h3 {
     color: var(--text);
     cursor: pointer;
     display: inline-flex;
+    font-size: 0.78rem;
+    font-weight: 650;
     height: 34px;
     justify-content: center;
     line-height: 1;
-    padding: 0;
-    width: 34px;
+    padding: 0 0.8rem;
 }
 
 .theme-toggle:hover {
     box-shadow: var(--shadow-soft);
-    transform: translateY(-1px);
 }
 
 .app-main {
@@ -201,6 +202,7 @@ h3 {
 .flash {
     background: var(--card-muted);
     border: 1px solid var(--border);
+    border-left-width: 4px;
     border-radius: var(--radius);
     box-shadow: var(--shadow-soft);
     color: var(--text);
@@ -208,15 +210,28 @@ h3 {
 }
 
 .flash-danger {
-    border-color: color-mix(in srgb, var(--danger) 46%, var(--border));
+    background: color-mix(in srgb, var(--danger) 10%, var(--card));
+    border-color: var(--danger);
 }
 
 .flash-warning {
-    border-color: color-mix(in srgb, var(--warning) 46%, var(--border));
+    background: color-mix(in srgb, var(--warning) 10%, var(--card));
+    border-color: var(--warning);
 }
 
 .flash-success {
-    border-color: color-mix(in srgb, var(--success) 46%, var(--border));
+    background: color-mix(in srgb, var(--success) 10%, var(--card));
+    border-color: var(--success);
+}
+
+.field-error {
+    color: var(--danger);
+    font-weight: 600;
+    margin: 0;
+}
+
+.upload-zone:has(input[aria-invalid="true"]) {
+    border-color: var(--danger);
 }
 
 .app-card {
@@ -229,7 +244,6 @@ h3 {
 
 .lift-card:hover {
     box-shadow: var(--shadow-soft);
-    transform: translateY(-1px);
 }
 
 .app-card-header {
@@ -256,11 +270,9 @@ h3 {
 
 .section-eyebrow {
     color: var(--muted);
-    font-size: 0.72rem;
-    font-weight: 750;
-    letter-spacing: 0.12em;
+    font-size: 0.8rem;
+    font-weight: 600;
     margin-bottom: 0.55rem;
-    text-transform: uppercase;
 }
 
 .home-page {
@@ -336,7 +348,15 @@ h3 {
 }
 
 .scan-progress-error {
-    border-color: color-mix(in srgb, var(--danger) 42%, var(--border));
+    border-color: var(--danger);
+}
+
+.scan-progress-error [data-progress-title] {
+    color: var(--danger);
+}
+
+.scan-progress-error .progress-bar {
+    display: none;
 }
 
 .progress-bar {
@@ -510,13 +530,19 @@ h3 {
     width: 0.9rem;
 }
 
-.toggle-input:checked + .toggle-control::after {
+.toggle-input:checked + .toggle-control {
     background: var(--primary);
+    border-color: var(--primary);
+}
+
+.toggle-input:checked + .toggle-control::after {
+    background: var(--background);
     transform: translateX(1.08rem);
 }
 
 .toggle-input:focus-visible + .toggle-control {
-    box-shadow: 0 0 0 4px var(--ring);
+    outline: 2px solid var(--text);
+    outline-offset: 2px;
 }
 
 .toggle-title,
@@ -670,16 +696,10 @@ h3 {
     color: var(--danger);
 }
 
-.feature-grid,
 .mini-grid,
 .results-grid {
     display: grid;
     gap: var(--space-section);
-}
-
-.feature-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    margin-top: var(--space-section);
 }
 
 .privacy-note {
@@ -687,31 +707,6 @@ h3 {
     margin: 1.25rem auto 0;
     max-width: 40rem;
     text-align: center;
-}
-
-.how-section {
-    margin: 4.5rem auto 0;
-    max-width: 820px;
-}
-
-.compact-section-header {
-    margin-bottom: 1rem;
-    text-align: center;
-    max-width: none;
-}
-
-.compact-section-header h2 {
-    font-size: clamp(1.45rem, 3vw, 2rem);
-}
-
-.compact-feature-grid {
-    gap: 1rem;
-    margin-top: 1rem;
-}
-
-.compact-feature-grid .app-card {
-    box-shadow: var(--shadow-soft);
-    padding: 1.25rem;
 }
 
 .support-card,
@@ -804,10 +799,8 @@ h3 {
 .stat-card span {
     color: var(--muted);
     display: block;
-    font-size: 0.72rem;
-    font-weight: 750;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    font-size: 0.8rem;
+    font-weight: 600;
 }
 
 .stat-card strong {
@@ -856,10 +849,8 @@ h3 {
 
 .batch-file-details dt {
     color: var(--muted);
-    font-size: 0.68rem;
-    font-weight: 750;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    font-size: 0.8rem;
+    font-weight: 600;
 }
 
 .batch-file-details dd {
@@ -908,6 +899,11 @@ h3 {
     text-align: right;
 }
 
+.risk-score-card .app-card-description {
+    font-size: 0.8rem;
+    max-width: 16rem;
+}
+
 .risk-score-card strong {
     color: var(--muted);
     font-size: 0.95rem;
@@ -943,10 +939,8 @@ h3 {
 
 .detail-list dt {
     color: var(--muted);
-    font-size: 0.72rem;
-    font-weight: 750;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    font-size: 0.8rem;
+    font-weight: 600;
 }
 
 .detail-list dd {
@@ -1072,9 +1066,7 @@ h3 {
     background: var(--card-muted);
     color: var(--muted);
     font-size: 0.7rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    font-weight: 600;
 }
 
 .metadata-table tbody tr:last-child td {
@@ -1153,22 +1145,6 @@ h3 {
     animation: fade-up 0.45s ease both;
 }
 
-.delay-1 {
-    animation-delay: 0.06s;
-}
-
-.delay-2 {
-    animation-delay: 0.12s;
-}
-
-.delay-3 {
-    animation-delay: 0.18s;
-}
-
-.delay-4 {
-    animation-delay: 0.24s;
-}
-
 @keyframes fade-up {
     from {
         opacity: 0;
@@ -1201,14 +1177,9 @@ h3 {
 
 @media (max-width: 900px) {
     .results-grid,
-    .feature-grid,
     .mini-grid,
     .batch-summary-grid {
         grid-template-columns: 1fr;
-    }
-
-    .how-section {
-        margin-top: 3rem;
     }
 
     .result-hero,
@@ -1276,7 +1247,6 @@ h3 {
     .home-page,
     .home-shell,
     .home-upload-card,
-    .how-section,
     .compact-support {
         max-width: 100%;
     }

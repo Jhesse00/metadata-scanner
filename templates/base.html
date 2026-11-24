@@ -15,8 +15,8 @@
     <div class="app-container nav-inner">
         <a class="brand-link" href="{{ url_for('index') }}">Metadata Privacy Scanner</a>
         <div class="nav-actions">
-            <span class="nav-label">{% block nav_label %}Privacy Tool{% endblock %}</span>
-            <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to light mode" title="Switch to light mode">☀️</button>
+            <span class="nav-label">{% block nav_label %}{% endblock %}</span>
+            <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to light mode" title="Switch to light mode">Light</button>
         </div>
     </div>
 </header>
@@ -25,7 +25,7 @@
     {% if messages %}
         <div class="app-container flash-stack" aria-live="polite">
             {% for category, message in messages %}
-                <div class="flash flash-{{ category }}" role="alert">{{ message }}</div>
+                <div class="flash flash-{{ category }}" role="alert"><strong>{{ {"danger": "Error", "warning": "Warning", "success": "Done"}.get(category, "Note") }}:</strong> {{ message }}</div>
             {% endfor %}
         </div>
     {% endif %}
@@ -43,7 +43,7 @@
     const themeToggle = document.getElementById("themeToggle");
     const setThemeIcon = () => {
         const isDark = document.documentElement.dataset.theme === "dark";
-        themeToggle.textContent = isDark ? "☀️" : "🌙";
+        themeToggle.textContent = isDark ? "Light" : "Dark";
         themeToggle.title = isDark ? "Switch to light mode" : "Switch to dark mode";
         themeToggle.setAttribute("aria-label", themeToggle.title);
     };
