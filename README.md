@@ -1,204 +1,101 @@
-# Metadata Privacy Scanner Web App
+# Metadata Privacy Scanner
 
-## Screenshots
-
-### Homepage
+Flask application for inspecting privacy-sensitive metadata in image, PDF, and DOCX files. It classifies findings, assigns a risk score, removes supported metadata, and generates downloadable reports.
 
 ![Metadata Privacy Scanner homepage](screenshots/homepage-dark.png)
 
-### Low-Risk Results
+## What it does
 
-![Low-risk metadata scan results](screenshots/low-risk-results.png)
+- Scans one file or a batch of JPG, JPEG, PNG, PDF, and DOCX files.
+- Lists metadata grouped as identity, location, device, time, file information, and other.
+- Rates each field Low, Medium, or High and gives a 0-100 risk score with an explanation and recommendations.
+- Writes a cleaned copy of the file and shows a before/after metadata comparison when cleaning succeeds.
+- Generates TXT, JSON, and HTML reports for each scan.
 
-### Metadata Table and Downloads
+| File type | Metadata extraction | Cleaning |
+| --- | --- | --- |
+| JPG, JPEG, PNG | ExifTool when installed; Pillow fallback | Copy pixel data into a new image and save it without EXIF |
+| PDF | PyMuPDF document properties | Clear PDF document metadata |
+| DOCX | `python-docx` core properties | Blank author, last modified by, title, and subject; clear created and modified dates where supported |
 
-![Metadata table and download actions](screenshots/low-risk-metadata-and-downloads.png)
+## How it works
 
-### High-Risk Metadata Table
+1. Validate the upload: allowed extension, safe filename, and a file signature that matches the extension. Requests are limited to 10 MiB, and Pillow's decompression-bomb limit is set to 25 million pixels.
+2. Extract metadata and compute a SHA-256 digest of the file bytes.
+3. Classify each field and calculate the risk score.
+4. Clean the file, re-scan the cleaned copy, and write the reports.
 
-![High-risk grouped metadata table](screenshots/high-risk-metadata-table.png)
+### Risk scoring
 
-### Sanitizer Comparison
+| Level | Fields | Points each |
+| --- | --- | --- |
+| High | GPS latitude/longitude (any field containing "gps"), author, last modified by, camera make, camera model | 35 |
+| Medium | Software, creator, producer, creation and modification dates (any field containing "date" or "time") | 15 |
+| Low | Everything else, such as file size, file type, page count, image size, and SHA-256 hash | 0 |
 
-![Sanitizer before and after comparison](screenshots/sanitizer-comparison.png)
+The score is capped at 100. The overall level is High if any High field is present, Medium if at least one Medium field and no High field is present, and Low otherwise. See [docs/risk-scoring.md](docs/risk-scoring.md).
 
-## Overview
+### SHA-256
 
-Metadata Privacy Scanner is a Python Flask web app that helps users identify hidden metadata in uploaded images, PDFs, and DOCX documents.
-## Features
+The SHA-256 digest identifies the exact file content. It is classified Low, does not affect the score, and does not prove the file is authentic.
 
-- Upload and scan one file or a batch of JPG, JPEG, PNG, PDF, and DOCX files.
-- Enforces secure filenames, extension validation, magic-byte validation, and a 10MB upload limit.
-- Applies a Pillow image pixel limit to reduce decompression-bomb risk.
-- Extracts image metadata using ExifTool when available, with Pillow as a fallback.
-- Extracts PDF metadata with PyMuPDF.
-- Extracts DOCX core properties with python-docx.
-- Converts PDF, EXIF, and DOCX timestamps into human-readable dates.
-- Calculates a privacy risk score and labels scans as Low, Medium, or High risk.
-- Highlights sensitive fields such as GPS location, author names, device details, timestamps, and software metadata.
-- Groups findings into Identity, Location, Device, Time, File Information, and Other Metadata categories.
-- Shows a risk explanation section that describes why a file received its score.
-- Generates tailored privacy recommendations based on the metadata found.
-- Sanitizes supported files by removing image EXIF data, common PDF metadata, and DOCX core properties where possible.
-- Shows a before/after comparison table for cleaned files.
-- Supports automatic deletion of uploaded source files after scanning.
-- Generates downloadable `.txt` reports in the `reports` folder.
-- Generates downloadable `.json` reports for structured scan output.
-- Generates downloadable `.html` reports for browser-friendly reporting.
-- Provides improved user-friendly errors for empty uploads, unsupported files, oversized files, and corrupt files.
-- Uses a polished custom interface with cards, badges, responsive layout, and risk-specific styling.
-- Includes pytest coverage and a GitHub Actions workflow that runs tests on push and pull requests.
-- Includes Docker and Docker Compose support for repeatable deployment.
+## Privacy and storage
 
-## Tools Used
+- Auto-delete is on by default in the upload form. When enabled, the uploaded file is deleted after its scan, including when the scan fails. Without it, uploads stay in `uploads/`.
+- Reports in `reports/` and cleaned files in `cleaned/` stay on disk for download. Auto-delete does not remove them.
+- Batch results are held in memory for 1 hour. There is no persistent scan history.
+- The app has no authentication. Do not expose it publicly without adding access control and file retention rules.
 
-- Python
-- Flask
-- Custom CSS
-- ExifTool
-- Pillow
-- PyMuPDF
-- python-docx
-- Docker
-- Docker Compose
-- pytest
-- GitHub Actions
+## Screenshots
 
+| Scan results | High-risk metadata | Sanitization comparison |
+| --- | --- | --- |
+| ![Low-risk results](screenshots/low-risk-results.png) | ![High-risk metadata table](screenshots/high-risk-metadata-table.png) | ![Sanitizer comparison](screenshots/sanitizer-comparison.png) |
 
-## How It Works
+More: [metadata table and downloads](screenshots/low-risk-metadata-and-downloads.png), [homepage](screenshots/homepage.png), [results page](screenshots/results-page.png).
 
-1. A user uploads one or more supported files through the Flask form.
-2. The app validates the extension, checks file signatures, and saves the file with a safe server-side filename in `uploads/`.
-3. The scanner extracts metadata based on the file type.
-4. Raw PDF, EXIF, and DOCX dates are converted into readable values such as `April 29, 2026 at 12:41 PM (UTC-04:00)`.
-5. Each metadata field is categorized and classified as Low, Medium, or High risk.
-6. The results page displays the risk level, score, explanation, sensitive fields, recommendations, and grouped metadata tables.
-7. A cleaned file is generated in `cleaned/` when the file type supports sanitization.
-8. TXT, JSON, and HTML reports are generated in `reports/` and made available for download.
-9. If auto-delete is enabled, uploaded source files are removed after scanning.
+## Setup
 
-## Sanitizer
-
-- Images: re-saves the image without EXIF metadata.
-- PDFs: clears common document metadata fields through PyMuPDF where possible.
-- DOCX: blanks core properties such as author, last modified by, title, and subject where possible.
-
-Cleaned files are stored in `cleaned/`, which is ignored by Git except for `.gitkeep`.
-
-## Batch Scan
-
-The upload form accepts multiple files. Batch results show a dashboard with file name, type, risk level, score, sensitive field count, report downloads, and cleaned file download links when available.
-
-## Privacy Controls
-
-The homepage includes an auto-delete option. When enabled, uploaded source files are deleted after scanning while generated reports and cleaned files remain available for download.
-
-## Testing
-
-Run the test suite locally with:
-
-```bash
-pytest
-```
-
-GitHub Actions runs the same test suite on push and pull requests.
-
-## Risk Scoring
-
-- Low Risk: only basic technical details were found, such as file size, file type, hash, or page count.
-- Medium Risk: software names, timestamps, PDF creator/producer data, or similar operational metadata were found.
-- High Risk: GPS coordinates, author names, last modified by values, camera make/model, or personal identifying metadata were found.
-
-The score is intentionally simple and explainable: high-risk fields add more weight than medium-risk fields, and the final score is capped at 100.
-
-## Metadata Categories
-
-- Identity Metadata: author, last modified by, and creator fields.
-- Location Metadata: GPS latitude and longitude.
-- Device Metadata: camera make, camera model, and software fields.
-- Time Metadata: creation, modification, and EXIF date/time fields.
-- File Information: file name, file type, file size, SHA-256 hash, page count, and image size.
-- Other Metadata: any supported fields that do not fit the primary categories.
-
-## Installation
+Requires Python 3.12, the version used in CI. ExifTool is optional; without it, images are read with Pillow.
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate        # PowerShell: .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-python app.py
 ```
 
-On Windows PowerShell:
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-python app.py
-```
-
-Open the app at:
-
-```text
-http://localhost:5000
-```
-
-## Docker Setup
-
-Build and run the app with Docker Compose:
+### Docker
 
 ```bash
 docker compose up --build
 ```
 
-For production-like deployments, provide a strong Flask secret key before starting Compose:
+The image installs ExifTool and runs the app with gunicorn on port 5000. Compose mounts `uploads/`, `reports/`, and `cleaned/` as local folders. The default `SECRET_KEY` in Compose is for local use only; set your own for any other deployment.
+
+## Usage
 
 ```bash
-SECRET_KEY="use-a-long-random-value" docker compose up --build
+python app.py
 ```
 
-Then visit:
+Open <http://localhost:5000>, choose one or more files, and submit. A single file opens its results page. A batch opens a summary with a link to each file's results. Reports and the cleaned file are downloaded from the results page.
+
+## Tests
+
+```bash
+python -m pytest -q
+```
+
+The tests cover upload validation, file signature checks, date formatting, GPS conversion, risk scoring, metadata grouping, report generation, image cleaning, batch results, and batch cleanup. GitHub Actions runs `pytest` on Python 3.12 for every push and pull request.
+
+## Project structure
 
 ```text
-http://localhost:5000
+app.py              Flask routes, metadata extraction, risk scoring, cleaning, reports
+templates/          Jinja templates
+static/             CSS and JavaScript
+docs/               Risk scoring and project overview
+tests/              pytest tests
+screenshots/        README screenshots
+uploads/ reports/ cleaned/   Runtime output folders (contents ignored by Git)
 ```
-
-The Docker image installs ExifTool so image metadata extraction can use it when available.
-
-Generated uploads, reports, and cleaned files are mounted as local folders by `docker-compose.yml`; their contents are ignored by Git.
-
-## GitHub Actions
-
-The included workflow at `.github/workflows/tests.yml` installs dependencies and runs `pytest` on push and pull requests.
-
-## Example Output
-
-```text
-File Name: example.jpg
-File Type: JPEG
-File Size: 2.14 MB
-SHA-256 Hash: 4f8c...
-Risk Level: High
-Risk Score: 100/100
-Cleaned File Status: Cleaned
-
-Risk Explanation:
-GPS location data can reveal where an image was taken. Device metadata can reveal the camera, phone, or software used.
-
-Sensitive Metadata Found:
-- GPS Latitude
-- GPS Longitude
-- Camera Model
-
-Recommendations:
-- Remove GPS metadata before sharing this image publicly.
-- Device metadata can reveal the camera, phone, or software used.
-```
-
-
-## Future Improvements
-
-- Add a scan history page backed by SQLite.
-- Add authentication for multi-user deployments.
-- Add deeper file-type detection using libmagic.
