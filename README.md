@@ -1,6 +1,6 @@
 # Metadata Privacy Scanner
 
-Flask app that finds privacy-sensitive metadata in image, PDF, and DOCX files, scores the risk, removes metadata, and produces downloadable reports.
+Flask application for inspecting privacy-sensitive metadata in image, PDF, and DOCX files. It classifies findings, assigns a risk score, removes supported metadata, and generates downloadable reports.
 
 ![Metadata Privacy Scanner homepage](screenshots/homepage-dark.png)
 
