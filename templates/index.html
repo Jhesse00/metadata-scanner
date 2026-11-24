@@ -1,49 +1,41 @@
 {% extends "base.html" %}
 
 {% block title %}Metadata Privacy Scanner{% endblock %}
-{% block nav_label %}Privacy Tool{% endblock %}
+{% block nav_label %}{% endblock %}
 
 {% block content %}
 <div class="home-page">
 <section class="home-shell fade-in">
     <div class="home-hero">
-        <span class="badge badge-neutral">Privacy Tool</span>
         <h1>Metadata Privacy Scanner</h1>
-        <p class="hero-subtitle">Find hidden metadata and privacy risks before you share a file.</p>
-        <div class="badge-row" aria-label="Supported formats">
-            <span class="badge badge-soft">JPG</span>
-            <span class="badge badge-soft">PNG</span>
-            <span class="badge badge-soft">PDF</span>
-            <span class="badge badge-soft">DOCX</span>
-            <span class="badge badge-soft">10MB max</span>
-        </div>
+        <p class="hero-subtitle">See which names, locations, devices and dates are stored inside a file before you share it.</p>
     </div>
 
     <article class="app-card upload-card home-upload-card">
         <div class="app-card-header">
             <div>
-                <p class="section-eyebrow">Upload</p>
                 <h2 class="app-card-title">Choose files to scan</h2>
-                <p class="app-card-description">JPG, JPEG, PNG, PDF, and DOCX are supported.</p>
+                <p class="app-card-description">JPG, JPEG, PNG, PDF or DOCX.</p>
             </div>
         </div>
 
-        <form class="scan-form" method="post" enctype="multipart/form-data" data-scan-form>
+        <form class="scan-form" method="post" enctype="multipart/form-data" data-scan-form novalidate>
             <label class="upload-zone" for="files">
                 <svg class="upload-icon" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M12 16V5m0 0 4 4m-4-4-4 4M5 19h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
                 </svg>
                 <span class="upload-title">Select one or more files</span>
                 <span class="upload-copy" data-file-summary>Maximum upload size is 10MB per request.</span>
-                <input class="file-input" id="files" name="files" type="file" accept=".jpg,.jpeg,.png,.pdf,.docx" multiple required>
+                <input class="file-input" id="files" name="files" type="file" accept=".jpg,.jpeg,.png,.pdf,.docx" multiple required aria-describedby="files-error">
             </label>
+            <p class="field-error" id="files-error" data-file-error hidden></p>
 
             <label class="toggle-row" for="auto_delete">
                 <input class="toggle-input" type="checkbox" id="auto_delete" name="auto_delete" checked>
                 <span class="toggle-control" aria-hidden="true"></span>
                 <span>
                     <span class="toggle-title">Auto-delete source files</span>
-                    <span class="toggle-description">Remove uploaded originals after scanning.</span>
+                    <span class="toggle-description">Delete the uploaded original from the server when the scan finishes.</span>
                 </span>
             </label>
 
@@ -54,7 +46,7 @@
     <section class="app-card scan-progress-card" data-scan-progress hidden aria-live="polite">
         <div class="app-card-header compact">
             <div>
-                <p class="section-eyebrow">Scanning in Progress</p>
+                <p class="section-eyebrow">Scanning</p>
                 <h2 class="app-card-title" data-progress-title>Preparing your scan</h2>
                 <p class="app-card-description" data-progress-message>Reading file metadata...</p>
             </div>
@@ -74,37 +66,16 @@
         </ol>
     </section>
 
-    <p class="privacy-note fade-in delay-1">Files are processed locally on the server and supported files can be cleaned before sharing.</p>
+    <p class="privacy-note">Files are uploaded to this server and scanned there. Results include TXT, JSON and HTML reports.</p>
 </section>
 
-<section class="how-section fade-in delay-2" aria-label="How it works">
-    <div class="section-header compact-section-header">
-        <p class="section-eyebrow">How it works</p>
-        <h2>Scan, review, clean.</h2>
-    </div>
-    <div class="feature-grid compact-feature-grid">
-        <article class="app-card feature-card lift-card">
-            <h3 class="app-card-title">1. Upload</h3>
-            <p class="app-card-description">Select one file or a small batch.</p>
-        </article>
-        <article class="app-card feature-card lift-card">
-            <h3 class="app-card-title">2. Review</h3>
-            <p class="app-card-description">See risk level, metadata, and recommendations.</p>
-        </article>
-        <article class="app-card feature-card lift-card">
-            <h3 class="app-card-title">3. Export</h3>
-            <p class="app-card-description">Download reports or a sanitized file.</p>
-        </article>
-    </div>
-</section>
-
-<details class="app-card support-card compact-support fade-in delay-3">
+<details class="app-card support-card compact-support">
     <summary>
         <span>
             <span class="section-eyebrow">Sanitization</span>
-            <strong>Supported files can be cleaned before sharing.</strong>
+            <strong>Each scan also makes a cleaned copy you can download.</strong>
         </span>
-        <span class="learn-more-label">Learn more</span>
+        <span class="learn-more-label">What gets removed</span>
     </summary>
     <div class="mini-grid compact-mini-grid">
         <div class="mini-item"><strong>Images</strong><span>Remove EXIF metadata.</span></div>
