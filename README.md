@@ -1,34 +1,50 @@
 # Metadata Privacy Scanner
 
-Flask app for finding privacy-sensitive metadata in image, PDF, and DOCX files, with explainable risk scoring, metadata sanitization, and downloadable reports.
+Flask app that finds privacy-sensitive metadata in image, PDF, and DOCX files, scores the risk, removes metadata, and produces downloadable reports.
 
 ![Metadata Privacy Scanner homepage](screenshots/homepage-dark.png)
 
 ## What it does
 
-Upload one file or a batch of JPG, JPEG, PNG, PDF, and DOCX files. The app validates filename, extension, and file signature; enforces a 10 MiB request limit; and caps Pillow image dimensions at 25 million pixels.
+- Scans one file or a batch of JPG, JPEG, PNG, PDF, and DOCX files.
+- Lists metadata grouped as identity, location, device, time, file information, and other.
+- Rates each field Low, Medium, or High and gives a 0-100 risk score with an explanation and recommendations.
+- Writes a cleaned copy of the file and shows a before/after metadata comparison when cleaning succeeds.
+- Generates TXT, JSON, and HTML reports for each scan.
 
-| File type | Metadata extraction | Sanitization |
+| File type | Metadata extraction | Cleaning |
 | --- | --- | --- |
-| JPG, JPEG, PNG | ExifTool when installed; Pillow fallback | Re-save image without EXIF metadata |
-| PDF | PyMuPDF document properties | Clear common document properties where supported |
-| DOCX | `python-docx` core properties | Blank core properties where supported |
+| JPG, JPEG, PNG | ExifTool when installed; Pillow fallback | Copy pixel data into a new image and save it without EXIF |
+| PDF | PyMuPDF document properties | Clear PDF document metadata |
+| DOCX | `python-docx` core properties | Blank author, last modified by, title, and subject; clear created and modified dates where supported |
 
-Each scan includes a SHA-256 digest of the uploaded file's bytes. This identifies file content; it is not a privacy-risk indicator and does not prove file authenticity.
+## How it works
 
-## Scan flow
+1. Validate the upload: allowed extension, safe filename, and a file signature that matches the extension. Requests are limited to 10 MiB, and Pillow's decompression-bomb limit is set to 25 million pixels.
+2. Extract metadata and compute a SHA-256 digest of the file bytes.
+3. Classify each field and calculate the risk score.
+4. Clean the file, re-scan the cleaned copy, and write the reports.
 
-`Upload → validate → extract metadata + SHA-256 → classify fields and score risk → show findings → optionally sanitize and download reports`
+### Risk scoring
 
-Metadata fields receive Low, Medium, or High classifications. The numeric score adds 15 points per Medium field and 35 per High field, capped at 100. The displayed level is Low when there are no Medium/High fields, Medium when there is at least one Medium field and no High field, and High when any High field exists. See [risk-scoring details](docs/risk-scoring.md).
+| Level | Fields | Points each |
+| --- | --- | --- |
+| High | GPS latitude/longitude (any field containing "gps"), author, last modified by, camera make, camera model | 35 |
+| Medium | Software, creator, producer, creation and modification dates (any field containing "date" or "time") | 15 |
+| Low | Everything else, such as file size, file type, page count, image size, and SHA-256 hash | 0 |
 
-The results page groups metadata, explains detected risks, and provides recommendations. Scans can generate TXT, JSON, and HTML reports. Sanitized output and before/after metadata comparison are available when cleaning succeeds.
+The score is capped at 100. The overall level is High if any High field is present, Medium if at least one Medium field and no High field is present, and Low otherwise. See [docs/risk-scoring.md](docs/risk-scoring.md).
+
+### SHA-256
+
+The SHA-256 digest identifies the exact file content. It is classified Low, does not affect the score, and does not prove the file is authentic.
 
 ## Privacy and storage
 
-The upload form offers auto-delete. When enabled, the uploaded source file is removed after its scan, including error paths. Generated reports and cleaned files remain on disk for download; auto-delete does not remove them. Without auto-delete, uploaded files remain in `uploads/`. The app does not provide authentication or persistent scan history; do not expose it publicly without adding appropriate access controls and storage lifecycle controls.
-
-`uploads/`, `reports/`, and `cleaned/` are mounted as local folders by Docker Compose. Their generated contents are ignored by Git.
+- Auto-delete is on by default in the upload form. When enabled, the uploaded file is deleted after its scan, including when the scan fails. Without it, uploads stay in `uploads/`.
+- Reports in `reports/` and cleaned files in `cleaned/` stay on disk for download. Auto-delete does not remove them.
+- Batch results are held in memory for 1 hour. There is no persistent scan history.
+- The app has no authentication. Do not expose it publicly without adding access control and file retention rules.
 
 ## Screenshots
 
@@ -38,41 +54,48 @@ The upload form offers auto-delete. When enabled, the uploaded source file is re
 
 More: [metadata table and downloads](screenshots/low-risk-metadata-and-downloads.png), [homepage](screenshots/homepage.png), [results page](screenshots/results-page.png).
 
-## Run locally
+## Setup
 
-Requires Python 3.12 as used by CI. Install dependencies and start Flask:
+Requires Python 3.12, the version used in CI. ExifTool is optional; without it, images are read with Pillow.
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate        # PowerShell: .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-python app.py
 ```
 
-PowerShell activation:
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-python app.py
-```
-
-Open <http://localhost:5000>.
-
-## Docker
+### Docker
 
 ```bash
 docker compose up --build
 ```
 
-Compose maps port 5000 and mounts the generated uploads, reports, and cleaned files to local folders. For a non-local deployment, set a strong `SECRET_KEY` and add authentication and suitable retention controls; the included Compose default is for local development.
+The image installs ExifTool and runs the app with gunicorn on port 5000. Compose mounts `uploads/`, `reports/`, and `cleaned/` as local folders. The default `SECRET_KEY` in Compose is for local use only; set your own for any other deployment.
+
+## Usage
+
+```bash
+python app.py
+```
+
+Open <http://localhost:5000>, choose one or more files, and submit. A single file opens its results page. A batch opens a summary with a link to each file's results. Reports and the cleaned file are downloaded from the results page.
 
 ## Tests
 
 ```bash
-python -m pip install -r requirements.txt
 python -m pytest -q
 ```
 
-GitHub Actions runs `pytest` on pushes and pull requests using Python 3.12.
+The tests cover upload validation, file signature checks, date formatting, GPS conversion, risk scoring, metadata grouping, report generation, image cleaning, batch results, and batch cleanup. GitHub Actions runs `pytest` on Python 3.12 for every push and pull request.
+
+## Project structure
+
+```text
+app.py              Flask routes, metadata extraction, risk scoring, cleaning, reports
+templates/          Jinja templates
+static/             CSS and JavaScript
+docs/               Risk scoring and project overview
+tests/              pytest tests
+screenshots/        README screenshots
+uploads/ reports/ cleaned/   Runtime output folders (contents ignored by Git)
+```
